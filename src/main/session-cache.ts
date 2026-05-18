@@ -109,7 +109,9 @@ export function syncSessionCache(): CachedSession[] {
     for (const s of cache.sessions) existingById.set(s.id, s);
     const newSessions: CachedSession[] = [];
 
+    const refreshedIds = new Set<string>();
     for (const row of rows) {
+      refreshedIds.add(row.id);
       const existing = existingById.get(row.id);
       if (existing) {
         // Update existing entry (message count may have changed)
@@ -144,6 +146,41 @@ export function syncSessionCache(): CachedSession[] {
         messageCount: row.message_count,
         model: row.model || "",
       });
+    }
+
+    // Phase 2: refresh message_count for cached sessions that weren't
+    // returned by the lastSync-windowed query above. Without this, an
+    // old session that's still accumulating messages keeps the stale
+    // count it had at first sync — the renderer reads from the cache,
+    // so the UI reports e.g. 15 messages when the conversation actually
+    // has 200+. Issue #226. Cheap (single column, no joins, batched IN
+    // clause), and skipped entirely on a first sync since cache.sessions
+    // is empty.
+    const staleIds = cache.sessions
+      .map((s) => s.id)
+      .filter((id) => !refreshedIds.has(id));
+    if (staleIds.length > 0) {
+      // SQLite caps prepared-statement parameters; chunk well under
+      // SQLITE_MAX_VARIABLE_NUMBER (default 999 on older builds) for
+      // portability across the better-sqlite3 versions hermes ships.
+      const CHUNK = 500;
+      const countsById = new Map<string, number>();
+      for (let i = 0; i < staleIds.length; i += CHUNK) {
+        const chunk = staleIds.slice(i, i + CHUNK);
+        const placeholders = chunk.map(() => "?").join(", ");
+        const refreshed = db
+          .prepare(
+            `SELECT id, message_count FROM sessions WHERE id IN (${placeholders})`,
+          )
+          .all(...chunk) as Array<{ id: string; message_count: number }>;
+        for (const r of refreshed) countsById.set(r.id, r.message_count);
+      }
+      for (const s of cache.sessions) {
+        const fresh = countsById.get(s.id);
+        if (fresh !== undefined && fresh !== s.messageCount) {
+          s.messageCount = fresh;
+        }
+      }
     }
 
     // Merge: new sessions first (most recent), then existing
