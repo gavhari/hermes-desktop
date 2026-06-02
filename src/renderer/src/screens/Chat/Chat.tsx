@@ -403,26 +403,28 @@ function Chat({
           onSubmit={handleSubmitOrQueue}
           onQuickAsk={actions.handleQuickAsk}
           onAbort={actions.handleAbort}
+          toolbarExtras={
+            <>
+              <ModelPicker
+                currentModel={modelConfig.currentModel}
+                currentProvider={modelConfig.currentProvider}
+                currentBaseUrl={modelConfig.currentBaseUrl}
+                modelGroups={modelConfig.modelGroups}
+                displayModel={modelConfig.displayModel}
+                onOpen={modelConfig.reload}
+                onSelectModel={modelConfig.selectModel}
+              />
+              <ContextFolderChip
+                contextFolder={contextFolder}
+                show={!remoteMode}
+                worktreeVisible={worktreeVisible}
+                onPickFolder={handlePickFolder}
+                onClearFolder={handleClearFolder}
+                onToggleWorktree={() => setWorktreeVisible((v) => !v)}
+              />
+            </>
+          }
         />
-        <div className="chat-input-meta">
-          <ModelPicker
-            currentModel={modelConfig.currentModel}
-            currentProvider={modelConfig.currentProvider}
-            currentBaseUrl={modelConfig.currentBaseUrl}
-            modelGroups={modelConfig.modelGroups}
-            displayModel={modelConfig.displayModel}
-            onOpen={modelConfig.reload}
-            onSelectModel={modelConfig.selectModel}
-          />
-          <ContextFolderChip
-            contextFolder={contextFolder}
-            show={!remoteMode}
-            worktreeVisible={worktreeVisible}
-            onPickFolder={handlePickFolder}
-            onClearFolder={handleClearFolder}
-            onToggleWorktree={() => setWorktreeVisible((v) => !v)}
-          />
-        </div>
       </div>
       {dragActive && (
         <div className="chat-drop-overlay" aria-hidden>

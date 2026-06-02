@@ -6,6 +6,7 @@ import {
 } from "../Chat/sessionHistory";
 import Sessions from "../Sessions/Sessions";
 import Agents from "../Agents/Agents";
+import ProfileSwitcher from "./ProfileSwitcher";
 import Settings from "../Settings/Settings";
 import Skills from "../Skills/Skills";
 import Memory from "../Memory/Memory";
@@ -22,7 +23,6 @@ import hermeslogo from "../../assets/hermes.png";
 import {
   ChatBubble,
   Clock,
-  Users,
   Settings as SettingsIcon,
   Puzzle,
   Brain,
@@ -56,7 +56,8 @@ type View =
 const NAV_ITEMS: { view: View; icon: LucideIcon; labelKey: string }[] = [
   { view: "chat", icon: ChatBubble, labelKey: "navigation.chat" },
   { view: "sessions", icon: Clock, labelKey: "navigation.sessions" },
-  { view: "agents", icon: Users, labelKey: "navigation.agents" },
+  // "agents" (Profiles) is reached from the sidebar-footer ProfileSwitcher's
+  // "Manage profiles" action rather than a top-level nav item.
   { view: "office", icon: Building, labelKey: "navigation.office" },
   { view: "kanban", icon: KanbanIcon, labelKey: "navigation.kanban" },
   { view: "models", icon: Layers, labelKey: "navigation.models" },
@@ -273,9 +274,11 @@ function Layout({
               )}
             </button>
           )}
-          <div className="sidebar-footer-text">
-            {activeProfile === "default" ? t("common.appName") : activeProfile}
-          </div>
+          <ProfileSwitcher
+            activeProfile={activeProfile}
+            onSwitch={handleSelectProfile}
+            onManage={() => goTo("agents")}
+          />
         </div>
       </aside>
 

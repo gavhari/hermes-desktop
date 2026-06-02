@@ -28,7 +28,7 @@ export default {
   clearChat: "Clear chat",
   clearChatConfirm: "Clear this conversation? This cannot be undone.",
   setContextFolder: "Set context folder",
-  contextFolderChip: "Folder",
+  contextFolderChip: "Choose Folder",
   contextFolderActive: "Context folder: {{path}}",
   removeContextFolder: "Remove context folder",
   attach: "Attach files",

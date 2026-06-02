@@ -998,10 +998,192 @@ body {
   gap: 8px;
 }
 
-.sidebar-footer-text {
-  font-size: 12px;
+/* ── Profile switcher (sidebar footer) ──────────────────── */
+.profile-switcher {
+  position: relative;
+}
+
+.profile-switcher-trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  text-align: left;
+  transition: all var(--transition);
+}
+
+.profile-switcher-trigger:hover,
+.profile-switcher-trigger.open {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.profile-switcher-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-switcher-chevron {
+  flex-shrink: 0;
   color: var(--text-muted);
-  padding: 0 8px;
+  transition: transform var(--transition);
+}
+
+.profile-switcher-trigger.open .profile-switcher-chevron {
+  transform: rotate(180deg);
+}
+
+/* Status dot — green when that profile's gateway is running. */
+.profile-status-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  opacity: 0.5;
+}
+
+.profile-status-dot.running {
+  background: var(--success, #22c55e);
+  opacity: 1;
+}
+
+/* Popover menu, anchored above the trigger. */
+.profile-menu {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  min-width: 260px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-bright);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+  padding: 6px;
+  z-index: 200;
+  animation: profileMenuIn 0.12s ease;
+}
+
+@keyframes profileMenuIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.profile-menu-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.profile-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  background: none;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--font-sans);
+  transition: background var(--transition);
+}
+
+.profile-menu-item:hover {
+  background: var(--bg-tertiary);
+}
+
+.profile-menu-item.active {
+  background: var(--accent-subtle);
+}
+
+.profile-menu-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.profile-menu-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-menu-tag {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.profile-menu-meta {
+  font-size: 11px;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-menu-check {
+  flex-shrink: 0;
+  color: var(--accent-text, var(--accent));
+}
+
+.profile-menu-manage {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 6px;
+  padding: 9px 10px;
+  background: none;
+  border: none;
+  border-top: 1px solid var(--border);
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  text-align: left;
+  transition: all var(--transition);
+}
+
+.profile-menu-manage:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.profile-menu-manage svg {
+  flex-shrink: 0;
+  color: var(--text-muted);
 }
 
 .sidebar-update-btn {
@@ -2216,12 +2398,13 @@ body {
 
 .chat-input-wrapper {
   display: flex;
-  align-items: flex-end;
-  gap: 8px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
   background: var(--bg-secondary);
   border: 1px solid var(--border-bright);
   border-radius: var(--radius-lg);
-  padding: 6px 6px 6px 16px;
+  padding: 10px 10px 8px;
   transition: border-color var(--transition);
 }
 
@@ -2230,19 +2413,39 @@ body {
 }
 
 .chat-input {
-  flex: 1;
+  width: 100%;
   background: none;
   border: none;
   color: var(--text-primary);
   font-size: 14px;
   font-family: var(--font-sans);
-  padding: 4px 0;
+  padding: 4px 6px;
   outline: none;
   resize: none;
   min-height: 20px;
   max-height: 120px;
   overflow-y: auto;
   line-height: 1.4;
+  box-sizing: border-box;
+}
+
+/* Bottom toolbar row: attach/mic + model/folder pickers, send pushed right. */
+.chat-input-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.chat-input-toolbar-spacer {
+  flex: 1;
+}
+
+/* Thin separator between the icon buttons and the picker chips. */
+.chat-input-toolbar-divider {
+  width: 1px;
+  align-self: stretch;
+  margin: 4px 4px;
+  background: var(--border-bright);
 }
 
 .chat-input::placeholder {
@@ -3128,15 +3331,6 @@ body {
 }
 
 /* Model picker */
-/* Footer row below the input: model picker + context-folder chip. */
-.chat-input-meta {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 6px;
-  flex-wrap: wrap;
-}
-
 .chat-model-bar {
   position: relative;
   display: flex;
@@ -3153,7 +3347,7 @@ body {
   color: var(--text-muted);
   font-size: 11px;
   cursor: pointer;
-  padding: 2px 6px;
+  padding: 4px 6px;
   border-radius: 4px;
   transition: all var(--transition);
 }
@@ -3205,7 +3399,7 @@ body {
   color: var(--text-muted);
   font-size: 11px;
   cursor: pointer;
-  padding: 2px 6px;
+  padding: 4px 8px;
   border-radius: 4px;
   transition: all var(--transition);
 }
