@@ -1,4 +1,4 @@
-import { Suspense, useMemo, useRef } from "react";
+import { Suspense, useRef } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, Environment, Lightformer } from "@react-three/drei";
 import * as THREE from "three";
@@ -133,7 +133,11 @@ function ATMMachines(): React.JSX.Element {
           {/* ATM body */}
           <mesh position={[0, atmH / 2, 0]} castShadow receiveShadow>
             <boxGeometry args={[atmW, atmH, atmD]} />
-            <meshStandardMaterial color={PALETTE.atm} roughness={0.4} metalness={0.3} />
+            <meshStandardMaterial
+              color={PALETTE.atm}
+              roughness={0.4}
+              metalness={0.3}
+            />
           </mesh>
           {/* Screen */}
           <mesh position={[0, atmH * 0.55, atmD / 2 + 0.01]}>
@@ -239,7 +243,11 @@ function FakePeople({ count }: { count: number }): React.JSX.Element {
   return (
     <>
       {peopleRef.current.map((p, i) => (
-        <group key={`fp-${i}`} position={[p.x, 0, p.z]} rotation={[0, p.facing, 0]}>
+        <group
+          key={`fp-${i}`}
+          position={[p.x, 0, p.z]}
+          rotation={[0, p.facing, 0]}
+        >
           {/* Legs / pants */}
           <mesh position={[0, p.height * 0.25, 0]} castShadow>
             <boxGeometry args={[0.35, p.height * 0.5, 0.25]} />
