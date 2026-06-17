@@ -310,7 +310,8 @@ const hermesAPI = {
         },
       );
     ipcRenderer.on("connection-config-changed", handler);
-    return () => ipcRenderer.removeListener("connection-config-changed", handler);
+    return () =>
+      ipcRenderer.removeListener("connection-config-changed", handler);
   },
 
   setSshConfig: (
@@ -941,20 +942,34 @@ const hermesAPI = {
     provider: string,
     model: string,
     baseUrl: string,
+    contextLength?: number,
   ): Promise<{
     id: string;
     name: string;
     provider: string;
     model: string;
     baseUrl: string;
+    contextLength?: number;
     createdAt: number;
-  }> => ipcRenderer.invoke("add-model", name, provider, model, baseUrl),
+  }> =>
+    ipcRenderer.invoke(
+      "add-model",
+      name,
+      provider,
+      model,
+      baseUrl,
+      contextLength,
+    ),
 
   removeModel: (id: string): Promise<boolean> =>
     ipcRenderer.invoke("remove-model", id),
 
-  updateModel: (id: string, fields: Record<string, string>): Promise<boolean> =>
-    ipcRenderer.invoke("update-model", id, fields),
+  updateModel: (
+    id: string,
+    fields: Record<string, string>,
+    contextLength?: number | null,
+  ): Promise<boolean> =>
+    ipcRenderer.invoke("update-model", id, fields, contextLength),
 
   onModelLibraryChanged: (callback: () => void): (() => void) => {
     const handler = (): void => callback();

@@ -10,6 +10,7 @@ import {
   type DashboardStreamEvent,
 } from "../dashboardEventAdapter";
 import { DashboardGatewayClient } from "../dashboardGatewayClient";
+import { executeSlash, type SlashExecOutcome } from "../slashExec";
 import type { ActiveTurn, Attachment, ChatMessage, UsageState } from "../types";
 import type { DesktopSessionContinuationItem } from "../../../../../shared/session-continuation";
 
@@ -99,6 +100,16 @@ interface UseDashboardChatTransportResult {
   abort: () => void;
   enabled: boolean;
   sendMessage: (text: string, attachments?: Attachment[]) => Promise<boolean>;
+  /**
+   * Run a slash command through the gateway's `slash.exec` pipeline instead of
+   * submitting it to the model as a literal prompt. `sys` renders command
+   * output into the transcript; a `send` outcome hands an agent prompt back to
+   * the caller so it can run a normal streaming turn.
+   */
+  execSlash: (
+    command: string,
+    sys: (text: string) => void,
+  ) => Promise<SlashExecOutcome>;
 }
 
 interface DashboardSeedMessage {
@@ -1310,6 +1321,34 @@ export function useDashboardChatTransport({
     ],
   );
 
+  const execSlash = useCallback(
+    async (
+      command: string,
+      sys: (text: string) => void,
+    ): Promise<SlashExecOutcome> => {
+      if (!enabled) {
+        return { kind: "error", message: "dashboard transport disabled" };
+      }
+      try {
+        const client = await ensureClient();
+        const runtimeSessionId = await ensureRuntimeSession(client);
+        const sessionId = await ensureSelectedModel(client, runtimeSessionId);
+        return await executeSlash({
+          command,
+          sessionId,
+          request: (method, params) => client.request(method, params),
+          sys,
+        });
+      } catch (err) {
+        return {
+          kind: "error",
+          message: err instanceof Error ? err.message : String(err),
+        };
+      }
+    },
+    [enabled, ensureClient, ensureRuntimeSession, ensureSelectedModel],
+  );
+
   const abort = useCallback(() => {
     const client = clientRef.current;
     const sessionId = runtimeSessionIdRef.current;
@@ -1327,5 +1366,5 @@ export function useDashboardChatTransport({
     [],
   );
 
-  return { abort, enabled, sendMessage };
+  return { abort, enabled, sendMessage, execSlash };
 }

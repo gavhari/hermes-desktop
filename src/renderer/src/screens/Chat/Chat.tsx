@@ -421,6 +421,10 @@ function Chat({
     sendViaDashboard: dashboardTransport.enabled
       ? dashboardTransport.sendMessage
       : undefined,
+    execSlashViaDashboard: dashboardTransport.enabled
+      ? dashboardTransport.execSlash
+      : undefined,
+    addAgentMessage,
     abortDashboard: dashboardTransport.enabled
       ? dashboardTransport.abort
       : undefined,

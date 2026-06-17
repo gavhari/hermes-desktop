@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import type { ChatInputHandle } from "../ChatInput";
 import { createTurn, shouldSendToAgent } from "../chatMessages";
+import type { SlashExecOutcome } from "../slashExec";
 import type { ActiveTurn, Attachment, ChatMessage } from "../types";
 
 interface LocalCommands {
@@ -28,6 +29,15 @@ interface UseChatActionsArgs {
     text: string,
     attachments?: Attachment[],
   ) => Promise<boolean>;
+  /** Run a slash command through the gateway's slash pipeline (dashboard
+   *  transport only). Undefined on the legacy transport, where slash commands
+   *  fall back to being sent as plain text. */
+  execSlashViaDashboard?: (
+    command: string,
+    sys: (text: string) => void,
+  ) => Promise<SlashExecOutcome>;
+  /** Render an agent/system message into the transcript (slash output). */
+  addAgentMessage?: (content: string) => void;
   abortDashboard?: () => void;
 }
 
@@ -49,6 +59,7 @@ interface UseChatActionsResult {
  * memoized children don't re-render on every streaming chunk — `messages`
  * and `isLoading` are read via live refs that update via `useEffect`.
  */
+// @lat: [[chat-commands#Slash command execution#Local vs gateway commands]]
 export function useChatActions({
   runId,
   profile,
@@ -63,6 +74,8 @@ export function useChatActions({
   activeTurnRef,
   contextFolder,
   sendViaDashboard,
+  execSlashViaDashboard,
+  addAgentMessage,
   abortDashboard,
 }: UseChatActionsArgs): UseChatActionsResult {
   const messagesRef = useRef(messages);
@@ -133,6 +146,37 @@ export function useChatActions({
         return;
       }
 
+      // Non-local slash command on the dashboard transport: route through the
+      // gateway's slash.exec / command.dispatch pipeline instead of submitting
+      // the literal text to the model (which would just echo it back as prose).
+      // A `send` outcome means the command resolved to an agent prompt, so we
+      // run a normal streaming turn with it. Skipped on the legacy transport
+      // (execSlashViaDashboard undefined) and for slash text with attachments.
+      if (
+        execSlashViaDashboard &&
+        text.startsWith("/") &&
+        (attachments?.length ?? 0) === 0
+      ) {
+        const startIndex = messagesRef.current.length;
+        const turn = pushUser(text);
+        setIsLoading(true);
+        const outcome = await execSlashViaDashboard(
+          text,
+          addAgentMessage ?? (() => {}),
+        );
+        if (outcome.kind === "send") {
+          activeTurnRef.current = { ...turn, startIndex, status: "running" };
+          onSessionStarted?.();
+          await sendToAgent(outcome.message);
+          return; // streaming-done clears the loading state
+        }
+        if (outcome.kind === "error") {
+          addAgentMessage?.(`error: ${outcome.message}`);
+        }
+        setIsLoading(false);
+        return;
+      }
+
       setIsLoading(true);
       const turn = pushUser(text, "user", attachments);
       activeTurnRef.current = {
@@ -146,6 +190,8 @@ export function useChatActions({
     [
       activeTurnRef,
       localCommands,
+      execSlashViaDashboard,
+      addAgentMessage,
       pushUser,
       onSessionStarted,
       sendToAgent,

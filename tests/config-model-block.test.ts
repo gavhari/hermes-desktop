@@ -325,3 +325,78 @@ describe("setModelConfig — scoped to model: block", () => {
     expect(mc.model).toBe("claude-sonnet-4");
   });
 });
+
+describe("setModelConfig — context_length override", () => {
+  it("writes model.context_length when a positive value is passed", async () => {
+    writeFileSync(
+      join(TEST_DIR, "config.yaml"),
+      ["model:", '  default: "qwen-max"', '  provider: "qwen"', ""].join("\n"),
+    );
+
+    const { setModelConfig, getModelContextLengthOverride } =
+      await importConfigWithHome(TEST_DIR);
+    setModelConfig("qwen", "qwen-max", "", undefined, 65536);
+
+    const after = readFileSync(join(TEST_DIR, "config.yaml"), "utf-8");
+    expect(after).toContain('context_length: "65536"');
+    expect(getModelContextLengthOverride()).toEqual({
+      model: "qwen-max",
+      contextLength: 65536,
+    });
+  });
+
+  it("leaves an existing context_length untouched when passed undefined", async () => {
+    writeFileSync(
+      join(TEST_DIR, "config.yaml"),
+      [
+        "model:",
+        '  default: "qwen-max"',
+        '  provider: "qwen"',
+        '  context_length: "65536"',
+        "",
+      ].join("\n"),
+    );
+
+    const { setModelConfig, getModelContextLengthOverride } =
+      await importConfigWithHome(TEST_DIR);
+    // No 5th arg — the override must survive a plain provider/model write.
+    setModelConfig("qwen", "qwen-max", "");
+
+    expect(getModelContextLengthOverride()?.contextLength).toBe(65536);
+  });
+
+  it("removes model.context_length when null (or non-positive) is passed", async () => {
+    writeFileSync(
+      join(TEST_DIR, "config.yaml"),
+      [
+        "model:",
+        '  default: "qwen-max"',
+        '  provider: "qwen"',
+        '  context_length: "65536"',
+        '  base_url: "https://example.com"',
+        "",
+      ].join("\n"),
+    );
+
+    const { setModelConfig, getModelContextLengthOverride } =
+      await importConfigWithHome(TEST_DIR);
+    setModelConfig("qwen", "qwen-max", "https://example.com", undefined, null);
+
+    const after = readFileSync(join(TEST_DIR, "config.yaml"), "utf-8");
+    expect(after).not.toContain("context_length");
+    // Sibling keys must remain intact after the line removal.
+    expect(after).toContain('default: "qwen-max"');
+    expect(after).toContain('base_url: "https://example.com"');
+    expect(getModelContextLengthOverride()).toBeNull();
+  });
+
+  it("getModelContextLengthOverride returns null for absent/invalid values", async () => {
+    writeFileSync(
+      join(TEST_DIR, "config.yaml"),
+      ["model:", '  default: "m"', '  context_length: "0"', ""].join("\n"),
+    );
+    const { getModelContextLengthOverride } =
+      await importConfigWithHome(TEST_DIR);
+    expect(getModelContextLengthOverride()).toBeNull();
+  });
+});
