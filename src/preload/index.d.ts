@@ -958,6 +958,15 @@ interface HermesAPI {
     taskId: string,
     profile?: string,
   ) => Promise<{ success: boolean; error?: string }>;
+  kanbanPromoteTask: (
+    taskId: string,
+    profile?: string,
+  ) => Promise<{ success: boolean; error?: string }>;
+  kanbanScheduleTask: (
+    taskId: string,
+    reason?: string,
+    profile?: string,
+  ) => Promise<{ success: boolean; error?: string }>;
   kanbanSpecifyTask: (
     taskId: string,
     profile?: string,

@@ -9104,6 +9104,60 @@ body {
   margin-top: 2px;
 }
 
+/* Priority selector — JIRA-style chips with a colored severity bullet.
+   Wraps so it stays readable in the narrow create-task modal. */
+.kanban-prio-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.kanban-prio-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    border-color var(--transition),
+    background var(--transition),
+    color var(--transition);
+}
+
+.kanban-prio-chip:hover {
+  border-color: var(--border-bright);
+  color: var(--text-primary);
+}
+
+.kanban-prio-chip-active {
+  background: var(--accent-subtle);
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+
+.kanban-prio-bullet {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  flex-shrink: 0;
+  background: var(--text-muted);
+}
+.kanban-prio-bullet[data-prio="p0"] {
+  background: var(--error);
+}
+.kanban-prio-bullet[data-prio="p1"] {
+  background: var(--warning);
+}
+.kanban-prio-bullet[data-prio="p2"] {
+  background: var(--accent);
+}
+
 .schedules-freq-pills {
   display: flex;
   gap: 2px;
@@ -11197,7 +11251,11 @@ body {
 .kanban-columns {
   flex: 1;
   display: grid;
-  grid-template-columns: repeat(6, minmax(220px, 1fr));
+  /* Column count is dynamic (8 canonical statuses, +1 when archived is shown),
+     so auto-flow columns rather than a fixed track count; the board scrolls
+     horizontally like a JIRA board when the lanes overflow. */
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(232px, 1fr);
   gap: 10px;
   overflow-x: auto;
   overflow-y: hidden;
@@ -11211,6 +11269,9 @@ body {
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   min-height: 0;
+  /* Clip the header's colored top accent to the lane's rounded corners,
+     otherwise the inset status bar shows square corners over the radius. */
+  overflow: hidden;
 }
 
 .kanban-column-header {
@@ -11237,6 +11298,72 @@ body {
   background: var(--bg-tertiary);
   padding: 1px 7px;
   border-radius: 999px;
+}
+
+/* JIRA-style colored status dot. Hues are fixed per status (independent of the
+   active theme) so a status reads the same everywhere — matching how issue
+   trackers color their status lozenges. Most map to the theme's semantic vars;
+   running (teal "live") and review (purple) have no theme equivalent. */
+.kanban-column-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  flex-shrink: 0;
+  background: var(--text-muted);
+}
+.kanban-column-dot[data-tone="neutral"] {
+  background: var(--text-muted);
+}
+.kanban-column-dot[data-tone="todo"] {
+  background: var(--text-secondary);
+}
+.kanban-column-dot[data-tone="scheduled"] {
+  background: var(--warning);
+}
+.kanban-column-dot[data-tone="ready"] {
+  background: var(--accent);
+}
+.kanban-column-dot[data-tone="running"] {
+  background: #14b8a6;
+}
+.kanban-column-dot[data-tone="blocked"] {
+  background: var(--error);
+}
+.kanban-column-dot[data-tone="review"] {
+  background: #a855f7;
+}
+.kanban-column-dot[data-tone="done"] {
+  background: var(--success);
+}
+.kanban-column-dot[data-tone="archived"] {
+  background: var(--text-muted);
+  opacity: 0.6;
+}
+
+/* Faint top accent on each lane header, tinted to the column's status. */
+.kanban-column-header {
+  gap: 8px;
+}
+.kanban-column-header .kanban-column-count {
+  margin-left: auto;
+}
+.kanban-column[data-tone="scheduled"] .kanban-column-header {
+  box-shadow: inset 0 2px 0 0 color-mix(in srgb, var(--warning) 60%, transparent);
+}
+.kanban-column[data-tone="ready"] .kanban-column-header {
+  box-shadow: inset 0 2px 0 0 color-mix(in srgb, var(--accent) 60%, transparent);
+}
+.kanban-column[data-tone="running"] .kanban-column-header {
+  box-shadow: inset 0 2px 0 0 color-mix(in srgb, #14b8a6 60%, transparent);
+}
+.kanban-column[data-tone="blocked"] .kanban-column-header {
+  box-shadow: inset 0 2px 0 0 color-mix(in srgb, var(--error) 60%, transparent);
+}
+.kanban-column[data-tone="review"] .kanban-column-header {
+  box-shadow: inset 0 2px 0 0 color-mix(in srgb, #a855f7 60%, transparent);
+}
+.kanban-column[data-tone="done"] .kanban-column-header {
+  box-shadow: inset 0 2px 0 0 color-mix(in srgb, var(--success) 60%, transparent);
 }
 
 .kanban-column-body {
@@ -11289,12 +11416,130 @@ body {
   border-radius: var(--radius-md);
 }
 
+.kanban-card {
+  position: relative;
+}
+
+/* Left priority accent bar — the JIRA "issue priority" cue. Only present when
+   the card carries a data-prio (P0/P1/P2); normal-priority cards have none. */
+.kanban-card[data-prio]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+  background: var(--text-muted);
+}
+.kanban-card[data-prio="p0"]::before {
+  background: var(--error);
+}
+.kanban-card[data-prio="p1"]::before {
+  background: var(--warning);
+}
+.kanban-card[data-prio="p2"]::before {
+  background: var(--accent);
+}
+
+.kanban-card-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.kanban-card-id {
+  font-family: var(--font-mono, ui-monospace, "SF Mono", monospace);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+
+.kanban-card-age {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+/* Pulsing "live" dot on running cards. */
+.kanban-live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #14b8a6;
+  box-shadow: 0 0 0 0 color-mix(in srgb, #14b8a6 70%, transparent);
+  animation: kanban-live-pulse 1.6s ease-out infinite;
+}
+@keyframes kanban-live-pulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, #14b8a6 60%, transparent);
+  }
+  70% {
+    box-shadow: 0 0 0 5px transparent;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
 .kanban-card-title {
   font-size: 13px;
   font-weight: 500;
   color: var(--text-primary);
   line-height: 1.3;
   word-break: break-word;
+}
+
+/* Assignee avatar chip (initials) + name. */
+.kanban-assignee {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+.kanban-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: var(--accent-subtle);
+  color: var(--accent-text);
+  font-size: 9px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.kanban-avatar-none {
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+}
+.kanban-assignee-name {
+  font-size: 11px;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 96px;
+}
+.kanban-assignee-none {
+  opacity: 0.7;
+}
+
+.kanban-pill-skills {
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+}
+
+/* Priority pill tones (used in the card header next to the id). */
+.kanban-pill-prio[data-prio="p0"] {
+  background: var(--error-bg);
+  color: var(--error);
+}
+.kanban-pill-prio[data-prio="p1"] {
+  background: var(--warning-bg);
+  color: var(--warning);
 }
 
 .kanban-card-meta {
@@ -11515,6 +11760,63 @@ body {
 .kanban-event-time {
   font-size: 11px;
   color: var(--text-muted);
+}
+
+/* Active state for the "show archived" toolbar toggle. */
+.kanban-toggle-active {
+  background: var(--accent-subtle) !important;
+  color: var(--accent-text) !important;
+  border-color: var(--accent-subtle) !important;
+}
+
+/* Status pill with a leading tone dot (used in the detail drawer header). */
+.kanban-pill-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* ---- Detail drawer (right-docked JIRA issue panel) ---- */
+.kanban-drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: color-mix(in srgb, var(--bg-primary) 40%, transparent);
+  z-index: 50;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.kanban-detail-drawer {
+  width: min(460px, 92vw);
+  height: 100%;
+  /* Clear the window's title-bar/tabs strip (.active-sessions-bar, z 1001,
+     ~34px) which paints above this overlay — without this the drawer's
+     header title is hidden behind it. */
+  padding-top: 38px;
+  background: var(--bg-secondary);
+  border-left: 1px solid var(--border);
+  box-shadow: -8px 0 24px -12px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: kanban-drawer-in 0.18s ease-out;
+}
+@keyframes kanban-drawer-in {
+  from {
+    transform: translateX(24px);
+    opacity: 0.6;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+.kanban-detail-drawer .schedules-modal-header {
+  flex-shrink: 0;
+}
+.kanban-detail-drawer .schedules-modal-body {
+  flex: 1;
+  overflow-y: auto;
 }
 
 /* ========================================================================
